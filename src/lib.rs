@@ -15,7 +15,7 @@ const MGBA_LOG_ENABLE: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0x
 ///
 /// The enum values correspond to their values within mGBA's logging system. Therefore, these
 /// values can simply be written directly to `MGBA_LOG_SEND`.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Level {
     /// Fatal causes mGBA to halt execution.
     Fatal = 0x100,
