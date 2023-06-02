@@ -4,18 +4,15 @@ use core::{
     fmt,
     fmt::{write, Write},
 };
-use log::{Level, LevelFilter, Log, Metadata, Record, SetLoggerError};
+use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 use voladdress::{Safe, VolAddress, VolBlock};
 
-const MGBA_LOG_BUFFER: VolBlock<u8, Safe, Safe, 256> =
-    unsafe { VolBlock::new(0x04FF_F600) };
-const MGBA_LOG_SEND: VolAddress<MgbaLogLevel, Safe, Safe> =
-    unsafe { VolAddress::new(0x04FF_F700) };
-const MGBA_LOG_ENABLE: VolAddress<u16, Safe, Safe> =
-    unsafe { VolAddress::new(0x04FF_F780) };
+const MGBA_LOG_BUFFER: VolBlock<u8, Safe, Safe, 256> = unsafe { VolBlock::new(0x04FF_F600) };
+const MGBA_LOG_SEND: VolAddress<Level, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F700) };
+const MGBA_LOG_ENABLE: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F780) };
 
 #[derive(Clone, Copy)]
-pub enum MgbaLogLevel {
+pub enum Level {
     /// Fatal causes mGBA to halt execution.
     Fatal = 0x100,
     Error = 0x101,
@@ -24,29 +21,29 @@ pub enum MgbaLogLevel {
     Debug = 0x104,
 }
 
-impl TryFrom<Level> for MgbaLogLevel {
+impl TryFrom<log::Level> for Level {
     type Error = ();
 
     /// Can only fail when `level == Level::Trace`.
-    fn try_from(level: Level) -> Result<Self, <Self as TryFrom<Level>>::Error> {
+    fn try_from(level: log::Level) -> Result<Self, <Self as TryFrom<log::Level>>::Error> {
         match level {
-            Level::Error => Ok(Self::Error),
-            Level::Warn => Ok(Self::Warning),
-            Level::Info => Ok(Self::Info),
-            Level::Debug => Ok(Self::Debug),
+            log::Level::Error => Ok(Self::Error),
+            log::Level::Warn => Ok(Self::Warning),
+            log::Level::Info => Ok(Self::Info),
+            log::Level::Debug => Ok(Self::Debug),
             // There is no analog for trace in mGBA's log system.
-            Level::Trace => Err(()),
+            log::Level::Trace => Err(()),
         }
     }
 }
 
 pub struct MgbaWriter {
-    level: MgbaLogLevel,
+    level: Level,
     index: u8,
 }
 
 impl MgbaWriter {
-    pub fn new(level: MgbaLogLevel) -> Self {
+    pub fn new(level: Level) -> Self {
         Self { level, index: 0 }
     }
 }
@@ -97,11 +94,11 @@ struct MgbaLogger;
 
 impl Log for MgbaLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Debug
+        metadata.level() <= log::Level::Debug
     }
 
     fn log(&self, record: &Record) {
-        if !matches!(record.level(), Level::Trace) {
+        if !matches!(record.level(), log::Level::Trace) {
             let mut writer = MgbaWriter::new(
                 // SAFETY: Just verified above that `record.level()` is not `Trace`.
                 unsafe { record.level().try_into().unwrap_unchecked() },
@@ -122,4 +119,3 @@ pub fn init() -> Result<(), SetLoggerError> {
         // The `TRACE` log level is not used by mGBA.
         .map(|()| log::set_max_level(LevelFilter::Debug))
 }
-
