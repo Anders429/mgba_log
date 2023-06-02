@@ -11,6 +11,10 @@ const MGBA_LOG_BUFFER: VolBlock<u8, Safe, Safe, 256> = unsafe { VolBlock::new(0x
 const MGBA_LOG_SEND: VolAddress<Level, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F700) };
 const MGBA_LOG_ENABLE: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F780) };
 
+/// A log level within mGBA.
+///
+/// The enum values correspond to their values within mGBA's logging system. Therefore, these
+/// values can simply be written directly to `MGBA_LOG_SEND`.
 #[derive(Clone, Copy)]
 enum Level {
     /// Fatal causes mGBA to halt execution.
@@ -21,10 +25,14 @@ enum Level {
     Debug = 0x104,
 }
 
+/// Attempt to convert a generic `log::Level` to an mGBA-compatible level.
+///
+/// This will succeed for every level except `Trace`. mGBA's log system does not have a level
+/// analogous to `Trace`.
 impl TryFrom<log::Level> for Level {
     type Error = ();
 
-    /// Can only fail when `level == Level::Trace`.
+    /// Can only fail when `level == log::Level::Trace`.
     fn try_from(level: log::Level) -> Result<Self, <Self as TryFrom<log::Level>>::Error> {
         match level {
             log::Level::Error => Ok(Self::Error),
