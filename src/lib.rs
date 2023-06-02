@@ -2,7 +2,7 @@
 
 use core::{
     fmt,
-    fmt::{write, Write},
+    fmt::{write, Display, Write},
 };
 use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 use voladdress::{Safe, VolAddress, VolBlock};
@@ -111,11 +111,37 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
+#[derive(Debug)]
+pub enum Error {
+    NotAcknowledgedByMgba,
+
+    SetLoggerError(SetLoggerError),
+}
+
+impl From<SetLoggerError> for Error {
+    fn from(error: SetLoggerError) -> Self {
+        Self::SetLoggerError(error)
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::NotAcknowledgedByMgba => fmt.write_str("mGBA did not acknowledge initialization"),
+            Self::SetLoggerError(error) => write!(fmt, "`log::set_logger()` error: {}", error),
+        }
+    }
+}
+
 static LOGGER: Logger = Logger;
 
-pub fn init() -> Result<(), SetLoggerError> {
+pub fn init() -> Result<(), Error> {
     MGBA_LOG_ENABLE.write(0xC0DE);
+    if MGBA_LOG_ENABLE.read() != 0x1DEA {
+        return Err(Error::NotAcknowledgedByMgba);
+    }
     log::set_logger(&LOGGER)
         // The `TRACE` log level is not used by mGBA.
         .map(|()| log::set_max_level(LevelFilter::Debug))
+        .map_err(|error| error.into())
 }
