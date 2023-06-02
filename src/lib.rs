@@ -12,7 +12,7 @@ const MGBA_LOG_SEND: VolAddress<Level, Safe, Safe> = unsafe { VolAddress::new(0x
 const MGBA_LOG_ENABLE: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F780) };
 
 #[derive(Clone, Copy)]
-pub enum Level {
+enum Level {
     /// Fatal causes mGBA to halt execution.
     Fatal = 0x100,
     Error = 0x101,
@@ -37,13 +37,13 @@ impl TryFrom<log::Level> for Level {
     }
 }
 
-pub struct Writer {
+struct Writer {
     level: Level,
     index: u8,
 }
 
 impl Writer {
-    pub fn new(level: Level) -> Self {
+    fn new(level: Level) -> Self {
         Self { level, index: 0 }
     }
 }
@@ -107,6 +107,24 @@ impl Log for Logger {
 
     /// This is a no-op. Flushing of buffers is already done in `log()`.
     fn flush(&self) {}
+}
+
+#[macro_export]
+macro_rules! fatal {
+    ($($arg:tt)+) => ($crate::__fatal(format_args!($($arg)+)));
+}
+
+#[doc(hidden)]
+pub fn __fatal(args: fmt::Arguments) {
+    // Ensure mGBA is listening.
+    if MGBA_LOG_ENABLE.read() == 0x1DEA {
+        // Fatal logging is often used in panic handlers, so panicking on write failures would lead
+        // to recursive panicking. Instead, this fails silently.
+        #[allow(unused_must_use)]
+        {
+            write(&mut Writer::new(Level::Fatal), args);
+        }
+    }
 }
 
 #[derive(Debug)]
