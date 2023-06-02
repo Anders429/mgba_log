@@ -37,18 +37,18 @@ impl TryFrom<log::Level> for Level {
     }
 }
 
-pub struct MgbaWriter {
+pub struct Writer {
     level: Level,
     index: u8,
 }
 
-impl MgbaWriter {
+impl Writer {
     pub fn new(level: Level) -> Self {
         Self { level, index: 0 }
     }
 }
 
-impl Write for MgbaWriter {
+impl Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let mut bytes = s.as_bytes().into_iter();
 
@@ -84,7 +84,7 @@ impl Write for MgbaWriter {
     }
 }
 
-impl Drop for MgbaWriter {
+impl Drop for Writer {
     fn drop(&mut self) {
         MGBA_LOG_SEND.write(self.level);
     }
@@ -99,7 +99,7 @@ impl Log for MgbaLogger {
 
     fn log(&self, record: &Record) {
         if !matches!(record.level(), log::Level::Trace) {
-            let mut writer = MgbaWriter::new(
+            let mut writer = Writer::new(
                 // SAFETY: Just verified above that `record.level()` is not `Trace`.
                 unsafe { record.level().try_into().unwrap_unchecked() },
             );
