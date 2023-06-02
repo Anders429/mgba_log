@@ -103,7 +103,8 @@ impl Log for Logger {
                 // SAFETY: Just verified above that `record.level()` is not `Trace`.
                 unsafe { record.level().try_into().unwrap_unchecked() },
             );
-            write(&mut writer, *record.args());
+            write(&mut writer, *record.args())
+                .unwrap_or_else(|error| panic!("write to mGBA log buffer failed: {}", error));
         }
     }
 
