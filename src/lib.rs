@@ -98,11 +98,8 @@ impl Log for Logger {
     }
 
     fn log(&self, record: &Record) {
-        if !matches!(record.level(), log::Level::Trace) {
-            let mut writer = Writer::new(
-                // SAFETY: Just verified above that `record.level()` is not `Trace`.
-                unsafe { record.level().try_into().unwrap_unchecked() },
-            );
+        if let Ok(level) = Level::try_from(record.level()) {
+            let mut writer = Writer::new(level);
             write(&mut writer, *record.args())
                 .unwrap_or_else(|error| panic!("write to mGBA log buffer failed: {}", error));
         }
