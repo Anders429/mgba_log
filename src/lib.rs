@@ -90,9 +90,9 @@ impl Drop for Writer {
     }
 }
 
-struct MgbaLogger;
+struct Logger;
 
-impl Log for MgbaLogger {
+impl Log for Logger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= log::Level::Debug
     }
@@ -111,7 +111,7 @@ impl Log for MgbaLogger {
     fn flush(&self) {}
 }
 
-static LOGGER: MgbaLogger = MgbaLogger;
+static LOGGER: Logger = Logger;
 
 pub fn init() -> Result<(), SetLoggerError> {
     MGBA_LOG_ENABLE.write(0xC0DE);
