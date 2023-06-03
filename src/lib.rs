@@ -112,14 +112,27 @@ impl Drop for Writer {
     }
 }
 
+/// Implements the logging interface for mGBA logging.
+///
+/// This struct implements `log::Log`, allowing it to be used as a logger with the `log` crate.
+/// Logging can be done using the standard log interface.
+///
+/// Note that this logger does not support `log::trace!`, since there are no trace logs available
+/// on mGBA.
 #[derive(Debug)]
 struct Logger;
 
 impl Log for Logger {
+    /// Logging is enabled for all log messages besides those whose level is `Trace`.
+    ///
+    /// This is because there is no analog for the `Trace` log level within mGBA.
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= log::Level::Debug
     }
 
+    /// Directly logs the `record` to mGBA's memory mapped IO registers for logging.
+    ///
+    /// Buffer flushing is handled automatically during logging.
     fn log(&self, record: &Record) {
         if let Ok(level) = Level::try_from(record.level()) {
             let mut writer = Writer::new(level);
