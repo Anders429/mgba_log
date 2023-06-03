@@ -45,19 +45,31 @@ impl TryFrom<log::Level> for Level {
     }
 }
 
+/// Writes bytes directly to mGBA's log buffer for a given level.
+///
+/// This writer automatically handles flushing the buffer when it is at capacity (256 bytes).
 #[derive(Debug)]
 struct Writer {
+    /// The mGBA log level of the bytes written by this writer.
+    ///
+    /// A new writer should be created for each new log level.
     level: Level,
+
+    /// The current position within the log buffer.
     index: u8,
 }
 
 impl Writer {
+    /// Creates a new writer for the given mGBA log level.
     fn new(level: Level) -> Self {
         Self { level, index: 0 }
     }
 }
 
 impl Write for Writer {
+    /// Write the given string to the log buffer.
+    ///
+    /// The buffer is flushed automatically when it becomes full.
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let mut bytes = s.as_bytes().into_iter();
 
@@ -94,6 +106,7 @@ impl Write for Writer {
 }
 
 impl Drop for Writer {
+    /// Flushes the buffer, ensuring that the remaining bytes are sent.
     fn drop(&mut self) {
         MGBA_LOG_SEND.write(self.level);
     }
