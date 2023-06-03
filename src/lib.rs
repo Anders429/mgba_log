@@ -145,11 +145,25 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
+/// Logs a message at the fatal level.
+///
+/// `Fatal` is a level specific to mGBA, and is not present within the standard `log` ecosystem.
+/// This macro allows logging at this level specifically.
+///
+/// If [`init()`] has not been successfully run, this will have no effect.
+///
+/// Note that successfully logging at the `Fatal` level in mGBA will permanently halt execution and
+/// display the logged message to the user. As such, it is not possible to log more than 256 bytes,
+/// as the execution will be halted as soon as the first 256 bytes in the buffer are flushed.
 #[macro_export]
 macro_rules! fatal {
     ($($arg:tt)+) => ($crate::__fatal(format_args!($($arg)+)));
 }
 
+/// Logs a message at the fatal level.
+///
+/// This is an implementation detail of the [`fatal!`] macro. It is not considered part of the
+/// public API and should not be used directly by external code.
 #[doc(hidden)]
 pub fn __fatal(args: fmt::Arguments) {
     // Ensure mGBA is listening.
