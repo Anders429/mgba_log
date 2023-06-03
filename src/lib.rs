@@ -45,6 +45,7 @@ impl TryFrom<log::Level> for Level {
     }
 }
 
+#[derive(Debug)]
 struct Writer {
     level: Level,
     index: u8,
@@ -98,6 +99,7 @@ impl Drop for Writer {
     }
 }
 
+#[derive(Debug)]
 struct Logger;
 
 impl Log for Logger {
