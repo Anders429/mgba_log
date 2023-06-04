@@ -34,8 +34,16 @@ use core::{
 use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 use voladdress::{Safe, VolAddress, VolBlock};
 
+/// Buffer for log messages to be written to.
 const MGBA_LOG_BUFFER: VolBlock<u8, Safe, Safe, 256> = unsafe { VolBlock::new(0x04FF_F600) };
+/// Send register.
+///
+/// Writing a level to this address drains the log buffer, logging it at the given log level.
 const MGBA_LOG_SEND: VolAddress<Level, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F700) };
+/// Register for enabling logging.
+///
+/// Writing a value of `0xC0DE` to this address will initialize logging. If logging was initialized
+/// properly in mGBA, reading this address will return the value `0x1DEA`.
 const MGBA_LOG_ENABLE: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F780) };
 
 /// A log level within mGBA.
