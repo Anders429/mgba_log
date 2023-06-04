@@ -215,6 +215,11 @@ impl Display for Error {
 /// This static logger can be used as the static reference.
 static LOGGER: Logger = Logger;
 
+/// Initialize mGBA logging.
+/// 
+/// This function returns `Ok(())` if the logger was enabled. If the logger was not enabled for any
+/// reason, it instead returns an [`Error`]. See the documentation for [`Error`] for what errors
+/// can occur.
 pub fn init() -> Result<(), Error> {
     MGBA_LOG_ENABLE.write(0xC0DE);
     if MGBA_LOG_ENABLE.read() != 0x1DEA {
