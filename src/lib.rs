@@ -1,3 +1,30 @@
+//! A logging implementation for mGBA.
+//!
+//! Provides a logging implementation for the [`log`] crate for logging when compiling for the Game
+//! Boy Advance and running within the [mGBA](https://mgba.io/) emulator.
+//!
+//! mGBA supports logging at the following log levels using the associated logging macros. Every
+//! level provided by the `log` crate is supported except for `Trace`, as mGBA has no analog for
+//! the `Trace` log level, and this crate provides a macro for logging directly to `Fatal`.
+//!
+//! | Level | Macro                | Notes                                                                             |
+//! | ----- | -------------------- | --------------------------------------------------------------------------------- |
+//! | Debug | [`log::debug!`]      |                                                                                   |
+//! | Info  | [`log::info!`]       |                                                                                   |
+//! | Warn  | [`log::warn!`]       |                                                                                   |
+//! | Error | [`log::error!`]      |                                                                                   |
+//! | Fatal | [`mgba_log::fatal!`] | Not a standard [`log`] level. Only usable when using this logging implementation. |
+//!
+//! # Compatibility
+//! This logger uses memory mapped IO registers specific to the Game Boy Advance. It is therefore
+//! only safe to use this library when building to run on the Game Boy Advance or a Game Boy
+//! Advance emulator.
+//!
+//! If this logger is attempted to be initialized when not running on mGBA, it will fail to
+//! initialize with an [`Error`] identifying the failure.
+//!
+//! [`mgba_log::fatal!`]: fatal!
+
 #![no_std]
 
 use core::{
@@ -210,13 +237,13 @@ impl Display for Error {
 }
 
 /// A static logger instance.
-/// 
+///
 /// When initializing with [`log::set_logger()`], a static reference to a logger must be provided.
 /// This static logger can be used as the static reference.
 static LOGGER: Logger = Logger;
 
 /// Initialize mGBA logging.
-/// 
+///
 /// This function returns `Ok(())` if the logger was enabled. If the logger was not enabled for any
 /// reason, it instead returns an [`Error`]. See the documentation for [`Error`] for what errors
 /// can occur.

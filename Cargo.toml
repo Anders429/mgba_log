@@ -1,5 +1,5 @@
 [package]
-name = "mgba_logger"
+name = "mgba_log"
 version = "0.1.0"
 edition = "2021"
 
