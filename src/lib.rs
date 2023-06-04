@@ -209,6 +209,10 @@ impl Display for Error {
     }
 }
 
+/// A static logger instance.
+/// 
+/// When initializing with [`log::set_logger()`], a static reference to a logger must be provided.
+/// This static logger can be used as the static reference.
 static LOGGER: Logger = Logger;
 
 pub fn init() -> Result<(), Error> {
