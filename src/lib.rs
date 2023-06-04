@@ -177,10 +177,20 @@ pub fn __fatal(args: fmt::Arguments) {
     }
 }
 
+/// An error occurring during initialization.
 #[derive(Debug)]
 pub enum Error {
+    /// Enabling of logging was not acknowledged by MGBA.
+    ///
+    /// This likely indicates that the program is not being run in mGBA at all. In many cases, this
+    /// may be considered a recoverable error. However, if this error is returned by [`init()`],
+    /// then the logger was never actually set, meaning a different logger could potentially be set
+    /// instead.
     NotAcknowledgedByMgba,
 
+    /// An error returned by `log::set_logger()`.
+    ///
+    /// This most often indicates that another logger has already been set by the program.
     SetLoggerError(SetLoggerError),
 }
 
