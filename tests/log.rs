@@ -88,3 +88,15 @@ fn warn() {
         message: "Hello, world!".to_owned(),
     }));
 }
+
+#[test]
+fn error() {
+    let rom = build_rom("tests/error");
+
+    let records = execute_rom(&rom);
+
+    assert!(records.contains(&Record {
+        level: Level::Error,
+        message: "Hello, world!".to_owned(),
+    }));
+}
