@@ -100,3 +100,15 @@ fn error() {
         message: "Hello, world!".to_owned(),
     }));
 }
+
+#[test]
+fn fatal() {
+    let rom = build_rom("tests/fatal");
+
+    let records = execute_rom(&rom);
+
+    assert!(records.contains(&Record {
+        level: Level::Fatal,
+        message: "Hello, world!".to_owned(),
+    }));
+}

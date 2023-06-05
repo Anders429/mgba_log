@@ -1,0 +1,9 @@
+[package]
+name = "fatal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4.18"
+mgba_log = {path = "../../"}
+voladdress = "1.3.0"
