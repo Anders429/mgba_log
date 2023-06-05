@@ -55,15 +55,24 @@ fn execute_rom(rom: &str) -> Vec<Record> {
 
 #[test]
 fn debug() {
-    // Build ROM.
     let rom = build_rom("tests/debug");
 
-    // Execute ROM.
     let records = execute_rom(&rom);
 
-    // Assert logs.
     assert!(records.contains(&Record {
         level: Level::Debug,
+        message: "Hello, world!".to_owned(),
+    }));
+}
+
+#[test]
+fn info() {
+    let rom = build_rom("tests/info");
+
+    let records = execute_rom(&rom);
+
+    assert!(records.contains(&Record {
+        level: Level::Info,
         message: "Hello, world!".to_owned(),
     }));
 }
