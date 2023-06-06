@@ -54,6 +54,15 @@ fn execute_rom(rom: &str) -> Vec<Record> {
 }
 
 #[test]
+fn trace() {
+    let rom = build_rom("tests/trace");
+
+    let records = execute_rom(&rom);
+
+    assert!(records.is_empty());
+}
+
+#[test]
 fn debug() {
     let rom = build_rom("tests/debug");
 
