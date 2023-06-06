@@ -149,3 +149,19 @@ fn new_line() {
         message: "world!".to_owned(),
     }));
 }
+
+#[test]
+fn overflow() {
+    let rom = build_rom("tests/overflow");
+
+    let records = execute_rom(&rom);
+
+    assert!(records.contains(&Record {
+        level: Level::Info,
+        message: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv".to_owned(),
+    }));
+    assert!(records.contains(&Record {
+        level: Level::Info,
+        message: "wxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz".to_owned(),
+    }));
+}
