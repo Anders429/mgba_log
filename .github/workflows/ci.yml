@@ -19,5 +19,5 @@ jobs:
       with:
         toolchain: nightly-2023-03-24
         components: rust-src
-    - run: sudo apt-get install elfutils
+    - run: sudo apt-get install elfutils-libelf
     - run: cargo test
