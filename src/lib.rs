@@ -106,9 +106,7 @@ impl Write for Writer {
     ///
     /// The buffer is flushed automatically when it becomes full.
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        let mut bytes = s.as_bytes().into_iter();
-
-        while let Some(&byte) = bytes.next() {
+        for &byte in s.as_bytes() {
             match byte {
                 b'\n' => {
                     // For readability purposes, just start a new log line.
