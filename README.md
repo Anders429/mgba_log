@@ -1,6 +1,6 @@
 # mgba_log
 
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Anders429/mgba_log/ci.yaml?branch=master)](https://github.com/Anders429/mgba_log/actions/workflows/ci.yaml)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Anders429/mgba_log/ci.yml?branch=master)](https://github.com/Anders429/mgba_log/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/mgba_log)](https://crates.io/crates/mgba_log)
 [![docs.rs](https://docs.rs/mgba_log/badge.svg)](https://docs.rs/mgba_log)
 [![License](https://img.shields.io/crates/l/mgba_log)](#license)
