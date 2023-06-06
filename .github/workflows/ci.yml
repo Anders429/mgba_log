@@ -20,4 +20,5 @@ jobs:
         toolchain: nightly-2023-03-24
         components: rust-src
     - run: sudo apt-get install libelf-dev
+    - run: sudo apt-get install binutils-arm-none-eabi
     - run: cargo test
