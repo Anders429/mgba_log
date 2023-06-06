@@ -124,3 +124,19 @@ fn null() {
         message: "\x1a".to_owned(),
     }));
 }
+
+#[test]
+fn new_line() {
+    let rom = build_rom("tests/new_line");
+
+    let records = execute_rom(&rom);
+
+    assert!(records.contains(&Record {
+        level: Level::Info,
+        message: "Hello,".to_owned(),
+    }));
+    assert!(records.contains(&Record {
+        level: Level::Info,
+        message: "world!".to_owned(),
+    }));
+}
