@@ -26,8 +26,14 @@
 //! [`mgba_log::fatal!`]: fatal!
 
 #![no_std]
+#![warn(clippy::pedantic, missing_docs)]
+#![allow(
+    // Clippy erroneously believes "mGBA" is an item that requires backticks.
+    clippy::doc_markdown,
+)]
 
 use core::{
+    convert::Into,
     fmt,
     fmt::{write, Display, Write},
 };
@@ -250,6 +256,7 @@ static LOGGER: Logger = Logger;
 
 /// Initialize mGBA logging.
 ///
+/// # Errors
 /// This function returns `Ok(())` if the logger was enabled. If the logger was not enabled for any
 /// reason, it instead returns an [`Error`]. See the documentation for [`Error`] for what errors
 /// can occur.
@@ -261,5 +268,5 @@ pub fn init() -> Result<(), Error> {
     log::set_logger(&LOGGER)
         // The `TRACE` log level is not used by mGBA.
         .map(|()| log::set_max_level(LevelFilter::Debug))
-        .map_err(|error| error.into())
+        .map_err(Into::into)
 }
