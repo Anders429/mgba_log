@@ -243,7 +243,7 @@ impl Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::NotAcknowledgedByMgba => fmt.write_str("mGBA did not acknowledge initialization"),
-            Self::SetLoggerError(error) => write!(fmt, "`log::set_logger()` error: {}", error),
+            Self::SetLoggerError(error) => write!(fmt, "`log::set_logger()` error: {error}"),
         }
     }
 }
