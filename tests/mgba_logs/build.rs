@@ -78,6 +78,7 @@ fn main() {
     println!("cargo:rustc-link-search=/System/Library/Frameworks");
     println!("cargo:rustc-link-lib=static=mgba");
     println!("cargo:rustc-link-lib=elf");
+    #[cfg(target_os = "macos")]
     println!("cargo:rustc-link-lib=framework=CoreFoundation");
     println!("cargo:rustc-link-lib=runner");
     println!("cargo:rerun-if-changed=c/runner.c");
