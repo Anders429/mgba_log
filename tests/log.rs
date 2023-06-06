@@ -112,3 +112,15 @@ fn fatal() {
         message: "Hello, world!".to_owned(),
     }));
 }
+
+#[test]
+fn null() {
+    let rom = build_rom("tests/null");
+
+    let records = execute_rom(&rom);
+
+    assert!(records.contains(&Record {
+        level: Level::Info,
+        message: "\x1a".to_owned(),
+    }));
+}
