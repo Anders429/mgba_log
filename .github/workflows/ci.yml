@@ -22,3 +22,46 @@ jobs:
     - run: sudo apt-get install libelf-dev
     - run: sudo apt-get install binutils-arm-none-eabi
     - run: cargo test
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: rustfmt
+    - run: cargo fmt -- --check
+
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@nightly
+    - run: cargo check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: clippy
+    - run: cargo clippy -- --deny warnings
+
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@nightly
+    - run: cargo doc --no-deps
+      env:
+        RUSTDOCFLAGS: -D warnings
+
+  private_doc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@nightly
+    - run: cargo doc --no-deps --document-private-items
+      env:
+        RUSTDOCFLAGS: -D warnings
