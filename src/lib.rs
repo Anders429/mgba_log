@@ -38,19 +38,18 @@ use core::{
     fmt::{write, Display, Write},
 };
 use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
-use voladdress::{Safe, VolAddress, VolBlock};
 
 /// Buffer for log messages to be written to.
-const MGBA_LOG_BUFFER: VolBlock<u8, Safe, Safe, 256> = unsafe { VolBlock::new(0x04FF_F600) };
+const MGBA_LOG_BUFFER: *mut u8 = 0x04FF_F600 as *mut u8;
 /// Send register.
 ///
 /// Writing a level to this address drains the log buffer, logging it at the given log level.
-const MGBA_LOG_SEND: VolAddress<Level, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F700) };
+const MGBA_LOG_SEND: *mut Level = 0x04FF_F700 as *mut Level;
 /// Register for enabling logging.
 ///
 /// Writing a value of `0xC0DE` to this address will initialize logging. If logging was initialized
 /// properly in mGBA, reading this address will return the value `0x1DEA`.
-const MGBA_LOG_ENABLE: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F780) };
+const MGBA_LOG_ENABLE: *mut u16 = 0x04FF_F780 as *mut u16;
 
 /// A log level within mGBA.
 ///
@@ -117,27 +116,39 @@ impl Write for Writer {
                 b'\n' => {
                     // For readability purposes, just start a new log line.
                     self.index = 0;
-                    MGBA_LOG_SEND.write(self.level);
+                    // SAFETY: This is guaranteed to be a write to a valid address.
+                    unsafe {
+                        MGBA_LOG_SEND.write_volatile(self.level);
+                    }
                     continue;
                 }
                 b'\x00' => {
                     // mGBA interprets null as the end of a line, so we replace null characters
                     // with substitute characters when they are intentionally logged.
 
-                    // SAFETY: This is guaranteed to be in-bounds.
-                    unsafe { MGBA_LOG_BUFFER.get(self.index as usize).unwrap_unchecked() }
-                        .write(b'\x1a');
+                    // SAFETY: This is guaranteed to be valid and in-bounds.
+                    unsafe {
+                        MGBA_LOG_BUFFER
+                            .add(self.index as usize)
+                            .write_volatile(b'\x1a');
+                    }
                 }
                 _ => {
-                    // SAFETY: This is guaranteed to be in-bounds.
-                    unsafe { MGBA_LOG_BUFFER.get(self.index as usize).unwrap_unchecked() }
-                        .write(byte);
+                    // SAFETY: This is guaranteed to be valid and in-bounds.
+                    unsafe {
+                        MGBA_LOG_BUFFER
+                            .add(self.index as usize)
+                            .write_volatile(byte);
+                    }
                 }
             }
             let (index, overflowed) = self.index.overflowing_add(1);
             self.index = index;
             if overflowed {
-                MGBA_LOG_SEND.write(self.level);
+                // SAFETY: This is guaranteed to be a write to a valid address.
+                unsafe {
+                    MGBA_LOG_SEND.write_volatile(self.level);
+                }
             }
         }
         Ok(())
@@ -147,7 +158,10 @@ impl Write for Writer {
 impl Drop for Writer {
     /// Flushes the buffer, ensuring that the remaining bytes are sent.
     fn drop(&mut self) {
-        MGBA_LOG_SEND.write(self.level);
+        // SAFETY: This is guaranteed to be a write to a valid address.
+        unsafe {
+            MGBA_LOG_SEND.write_volatile(self.level);
+        }
     }
 }
 
@@ -206,7 +220,8 @@ macro_rules! fatal {
 #[doc(hidden)]
 pub fn __fatal(args: fmt::Arguments) {
     // Ensure mGBA is listening.
-    if MGBA_LOG_ENABLE.read() == 0x1DEA {
+    // SAFETY: This is guaranteed to be a valid read.
+    if unsafe { MGBA_LOG_ENABLE.read_volatile() } == 0x1DEA {
         // Fatal logging is often used in panic handlers, so panicking on write failures would lead
         // to recursive panicking. Instead, this fails silently.
         #[allow(unused_must_use)]
@@ -261,8 +276,12 @@ static LOGGER: Logger = Logger;
 /// reason, it instead returns an [`Error`]. See the documentation for [`Error`] for what errors
 /// can occur.
 pub fn init() -> Result<(), Error> {
-    MGBA_LOG_ENABLE.write(0xC0DE);
-    if MGBA_LOG_ENABLE.read() != 0x1DEA {
+    // SAFETY: This is guaranteed to be a valid write.
+    unsafe {
+        MGBA_LOG_ENABLE.write(0xC0DE);
+    }
+    // SAFETY: This is guaranteed to be a valid read.
+    if unsafe { MGBA_LOG_ENABLE.read_volatile() } != 0x1DEA {
         return Err(Error::NotAcknowledgedByMgba);
     }
     log::set_logger(&LOGGER)
