@@ -70,7 +70,7 @@ where
 
 extern "C" fn drop_box<T>(data: *mut c_void) {
     unsafe {
-        Box::from_raw(data as *mut T);
+        drop(Box::from_raw(data as *mut T));
     }
 }
 
