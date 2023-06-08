@@ -38,10 +38,10 @@ use core::{
     fmt::{write, Display, Write},
 };
 use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
-use voladdress::{Safe, VolAddress, VolBlock};
+use voladdress::{Safe, VolAddress};
 
 /// Buffer for log messages to be written to.
-const MGBA_LOG_BUFFER: VolBlock<u8, Safe, Safe, 256> = unsafe { VolBlock::new(0x04FF_F600) };
+const MGBA_LOG_BUFFER: *mut u8 = 0x04FF_F600 as *mut u8;
 /// Send register.
 ///
 /// Writing a level to this address drains the log buffer, logging it at the given log level.
@@ -125,13 +125,19 @@ impl Write for Writer {
                     // with substitute characters when they are intentionally logged.
 
                     // SAFETY: This is guaranteed to be in-bounds.
-                    unsafe { MGBA_LOG_BUFFER.get(self.index as usize).unwrap_unchecked() }
-                        .write(b'\x1a');
+                    unsafe {
+                        MGBA_LOG_BUFFER
+                            .add(self.index as usize)
+                            .write_volatile(b'\x1a');
+                    }
                 }
                 _ => {
                     // SAFETY: This is guaranteed to be in-bounds.
-                    unsafe { MGBA_LOG_BUFFER.get(self.index as usize).unwrap_unchecked() }
-                        .write(byte);
+                    unsafe {
+                        MGBA_LOG_BUFFER
+                            .add(self.index as usize)
+                            .write_volatile(byte);
+                    }
                 }
             }
             let (index, overflowed) = self.index.overflowing_add(1);
