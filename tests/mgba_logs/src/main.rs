@@ -1,6 +1,6 @@
 mod mgba_bindings;
 
-use mgba_logs::{Level, Record};
+use mgba_logs::Record;
 use std::{
     env,
     ffi::{c_char, c_uchar, c_void, CStr, CString},
