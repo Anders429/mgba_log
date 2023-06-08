@@ -1,6 +1,6 @@
 mod mgba_bindings;
 
-use mgba_logs::{Level, Record};
+use mgba_logs::Record;
 use std::{
     env,
     ffi::{c_char, c_uchar, c_void, CStr, CString},
@@ -70,7 +70,7 @@ where
 
 extern "C" fn drop_box<T>(data: *mut c_void) {
     unsafe {
-        Box::from_raw(data as *mut T);
+        drop(Box::from_raw(data as *mut T));
     }
 }
 
