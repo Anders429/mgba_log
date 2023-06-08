@@ -1,3 +1,9 @@
+//! This binary allows running a GBA ROM in an instance of mGBA and capturing the logs emitted by
+//! that ROM.
+//!
+//! Logs that are captured are output as serialized JSON. They can be deserialized into the types
+//! exposed in this crate's library interface.
+
 mod mgba_bindings;
 
 use mgba_log_reporter::Record;
@@ -8,6 +14,7 @@ use std::{
     path::Path,
 };
 
+/// Run the provided ROM file, returning the captured logs.
 fn run(rom: &str) -> Vec<Record> {
     // Create new mGBA core for ROM.
     let rom_c_string = CString::new(rom).expect("failed to convert rom name to CString");
@@ -46,6 +53,9 @@ fn run(rom: &str) -> Vec<Record> {
     results
 }
 
+/// Create a callback from a function that can be passed to the mGBA bindings.
+///
+/// This can be used to create a function for capturing mGBA logs.
 unsafe fn generate_c_callback<F>(f: F) -> mgba_bindings::callback
 where
     F: FnMut(*mut c_char, c_uchar),
@@ -59,6 +69,7 @@ where
     }
 }
 
+/// Wrapper for a function to interface directly with the callback call.
 extern "C" fn call_closure<F>(data: *mut c_void, message: *mut c_char, level: c_uchar)
 where
     F: FnMut(*mut c_char, c_uchar),
@@ -68,6 +79,7 @@ where
     callback(message, level);
 }
 
+/// Wrapper for a function to allow it to be dropped.
 extern "C" fn drop_box<T>(data: *mut c_void) {
     unsafe {
         drop(Box::from_raw(data as *mut T));
