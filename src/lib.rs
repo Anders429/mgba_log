@@ -116,7 +116,7 @@ impl Write for Writer {
                 b'\n' => {
                     // For readability purposes, just start a new log line.
                     self.index = 0;
-                    // SAFETY: This is guaranteed to be write to a valid address.
+                    // SAFETY: This is guaranteed to be a write to a valid address.
                     unsafe {
                         MGBA_LOG_SEND.write_volatile(self.level);
                     }
@@ -126,7 +126,7 @@ impl Write for Writer {
                     // mGBA interprets null as the end of a line, so we replace null characters
                     // with substitute characters when they are intentionally logged.
 
-                    // SAFETY: This is guaranteed to be in-bounds.
+                    // SAFETY: This is guaranteed to be valid and in-bounds.
                     unsafe {
                         MGBA_LOG_BUFFER
                             .add(self.index as usize)
@@ -134,7 +134,7 @@ impl Write for Writer {
                     }
                 }
                 _ => {
-                    // SAFETY: This is guaranteed to be in-bounds.
+                    // SAFETY: This is guaranteed to be valid and in-bounds.
                     unsafe {
                         MGBA_LOG_BUFFER
                             .add(self.index as usize)
@@ -145,7 +145,7 @@ impl Write for Writer {
             let (index, overflowed) = self.index.overflowing_add(1);
             self.index = index;
             if overflowed {
-                // SAFETY: This is guaranteed to be write to a valid address.
+                // SAFETY: This is guaranteed to be a write to a valid address.
                 unsafe {
                     MGBA_LOG_SEND.write_volatile(self.level);
                 }
@@ -158,7 +158,7 @@ impl Write for Writer {
 impl Drop for Writer {
     /// Flushes the buffer, ensuring that the remaining bytes are sent.
     fn drop(&mut self) {
-        // SAFETY: This is guaranteed to be write to a valid address.
+        // SAFETY: This is guaranteed to be a write to a valid address.
         unsafe {
             MGBA_LOG_SEND.write_volatile(self.level);
         }
