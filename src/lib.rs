@@ -38,7 +38,6 @@ use core::{
     fmt::{write, Display, Write},
 };
 use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
-use voladdress::{Safe, VolAddress};
 
 /// Buffer for log messages to be written to.
 const MGBA_LOG_BUFFER: *mut u8 = 0x04FF_F600 as *mut u8;
@@ -50,7 +49,7 @@ const MGBA_LOG_SEND: *mut Level = 0x04FF_F700 as *mut Level;
 ///
 /// Writing a value of `0xC0DE` to this address will initialize logging. If logging was initialized
 /// properly in mGBA, reading this address will return the value `0x1DEA`.
-const MGBA_LOG_ENABLE: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F780) };
+const MGBA_LOG_ENABLE: *mut u16 = 0x04FF_F780 as *mut u16;
 
 /// A log level within mGBA.
 ///
@@ -221,7 +220,8 @@ macro_rules! fatal {
 #[doc(hidden)]
 pub fn __fatal(args: fmt::Arguments) {
     // Ensure mGBA is listening.
-    if MGBA_LOG_ENABLE.read() == 0x1DEA {
+    // SAFETY: This is guaranteed to be a valid read.
+    if unsafe { MGBA_LOG_ENABLE.read_volatile() } == 0x1DEA {
         // Fatal logging is often used in panic handlers, so panicking on write failures would lead
         // to recursive panicking. Instead, this fails silently.
         #[allow(unused_must_use)]
@@ -276,8 +276,12 @@ static LOGGER: Logger = Logger;
 /// reason, it instead returns an [`Error`]. See the documentation for [`Error`] for what errors
 /// can occur.
 pub fn init() -> Result<(), Error> {
-    MGBA_LOG_ENABLE.write(0xC0DE);
-    if MGBA_LOG_ENABLE.read() != 0x1DEA {
+    // SAFETY: This is guaranteed to be a valid write.
+    unsafe {
+        MGBA_LOG_ENABLE.write(0xC0DE);
+    }
+    // SAFETY: This is guaranteed to be a valid read.
+    if unsafe { MGBA_LOG_ENABLE.read_volatile() } != 0x1DEA {
         return Err(Error::NotAcknowledgedByMgba);
     }
     log::set_logger(&LOGGER)
