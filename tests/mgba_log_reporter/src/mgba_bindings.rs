@@ -1,3 +1,5 @@
+//! Exposes the bindings used for operating with mGBA directly.
+
 #![allow(
     dead_code,
     non_camel_case_types,
