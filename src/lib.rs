@@ -45,7 +45,7 @@ const MGBA_LOG_BUFFER: *mut u8 = 0x04FF_F600 as *mut u8;
 /// Send register.
 ///
 /// Writing a level to this address drains the log buffer, logging it at the given log level.
-const MGBA_LOG_SEND: VolAddress<Level, Safe, Safe> = unsafe { VolAddress::new(0x04FF_F700) };
+const MGBA_LOG_SEND: *mut Level = 0x04FF_F700 as *mut Level;
 /// Register for enabling logging.
 ///
 /// Writing a value of `0xC0DE` to this address will initialize logging. If logging was initialized
@@ -117,7 +117,10 @@ impl Write for Writer {
                 b'\n' => {
                     // For readability purposes, just start a new log line.
                     self.index = 0;
-                    MGBA_LOG_SEND.write(self.level);
+                    // SAFETY: This is guaranteed to be write to a valid address.
+                    unsafe {
+                        MGBA_LOG_SEND.write_volatile(self.level);
+                    }
                     continue;
                 }
                 b'\x00' => {
@@ -143,7 +146,10 @@ impl Write for Writer {
             let (index, overflowed) = self.index.overflowing_add(1);
             self.index = index;
             if overflowed {
-                MGBA_LOG_SEND.write(self.level);
+                // SAFETY: This is guaranteed to be write to a valid address.
+                unsafe {
+                    MGBA_LOG_SEND.write_volatile(self.level);
+                }
             }
         }
         Ok(())
@@ -153,7 +159,10 @@ impl Write for Writer {
 impl Drop for Writer {
     /// Flushes the buffer, ensuring that the remaining bytes are sent.
     fn drop(&mut self) {
-        MGBA_LOG_SEND.write(self.level);
+        // SAFETY: This is guaranteed to be write to a valid address.
+        unsafe {
+            MGBA_LOG_SEND.write_volatile(self.level);
+        }
     }
 }
 
