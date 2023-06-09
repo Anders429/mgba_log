@@ -4,7 +4,7 @@
 //! versions.
 
 use cargo_metadata::Message;
-use mgba_logs::{Level, Record};
+use mgba_log_reporter::{Level, Record};
 use std::{
     convert::AsRef,
     io::BufReader,
@@ -45,7 +45,7 @@ fn execute_rom(rom: &str) -> Vec<Record> {
     let mut command = Command::new("cargo")
         .args(["run", rom])
         .stdout(Stdio::piped())
-        .current_dir("tests/mgba_logs")
+        .current_dir("tests/mgba_log_reporter")
         .spawn()
         .expect("failed to run rom");
 
