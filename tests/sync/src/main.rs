@@ -3,7 +3,12 @@
 
 extern crate gba;
 
-use gba::{asm_runtime::RUST_IRQ_HANDLER, interrupts::IrqBits, mmio::{DISPSTAT, IE, IME}, video::DisplayStatus};
+use gba::{
+    asm_runtime::RUST_IRQ_HANDLER,
+    interrupts::IrqBits,
+    mmio::{DISPSTAT, IE, IME},
+    video::DisplayStatus,
+};
 use voladdress::{Safe, VolAddress};
 
 /// This address is used to communicate the current execution status directly with the test runner.
@@ -16,7 +21,7 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
 
 #[link_section = ".iwram"]
 extern "C" fn irq_handler(_: IrqBits) {
-  log::debug!("in irq");
+    log::debug!("in irq");
 }
 
 #[no_mangle]
