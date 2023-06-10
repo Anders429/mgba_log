@@ -50,6 +50,10 @@ const MGBA_LOG_SEND: *mut Level = 0x04FF_F700 as *mut Level;
 /// Writing a value of `0xC0DE` to this address will initialize logging. If logging was initialized
 /// properly in mGBA, reading this address will return the value `0x1DEA`.
 const MGBA_LOG_ENABLE: *mut u16 = 0x04FF_F780 as *mut u16;
+/// Interrupt Master Enable.
+///
+/// This register allows enabling and disabling interrupts.
+const IME: *mut bool = 0x0400_0208 as *mut bool;
 
 /// A log level within mGBA.
 ///
@@ -104,6 +108,37 @@ impl Writer {
     fn new(level: Level) -> Self {
         Self { level, index: 0 }
     }
+
+    fn write_byte(&mut self, byte: u8) {
+        // Write the new byte.
+        // SAFETY: This is guaranteed to be valid and in-bounds.
+        unsafe {
+            MGBA_LOG_BUFFER
+                .add(self.index as usize)
+                .write_volatile(byte);
+        }
+
+        let (index, overflowed) = self.index.overflowing_add(1);
+        self.index = index;
+        if overflowed {
+            // SAFETY: This is guaranteed to be a write to a valid address.
+            unsafe {
+                MGBA_LOG_SEND.write_volatile(self.level);
+            }
+        }
+    }
+
+    fn send(&mut self) {
+        // Write a null byte, indicating that this is the end of the message.
+        self.write_byte(b'\x00');
+        if self.index != 0 {
+            // SAFETY: This is guaranteed to be a write to a valid address.
+            unsafe {
+                MGBA_LOG_SEND.write_volatile(self.level);
+            }
+            self.index = 0;
+        }
+    }
 }
 
 impl Write for Writer {
@@ -115,39 +150,15 @@ impl Write for Writer {
             match byte {
                 b'\n' => {
                     // For readability purposes, just start a new log line.
-                    self.index = 0;
-                    // SAFETY: This is guaranteed to be a write to a valid address.
-                    unsafe {
-                        MGBA_LOG_SEND.write_volatile(self.level);
-                    }
-                    continue;
+                    self.send();
                 }
                 b'\x00' => {
                     // mGBA interprets null as the end of a line, so we replace null characters
                     // with substitute characters when they are intentionally logged.
-
-                    // SAFETY: This is guaranteed to be valid and in-bounds.
-                    unsafe {
-                        MGBA_LOG_BUFFER
-                            .add(self.index as usize)
-                            .write_volatile(b'\x1a');
-                    }
+                    self.write_byte(b'\x1a');
                 }
                 _ => {
-                    // SAFETY: This is guaranteed to be valid and in-bounds.
-                    unsafe {
-                        MGBA_LOG_BUFFER
-                            .add(self.index as usize)
-                            .write_volatile(byte);
-                    }
-                }
-            }
-            let (index, overflowed) = self.index.overflowing_add(1);
-            self.index = index;
-            if overflowed {
-                // SAFETY: This is guaranteed to be a write to a valid address.
-                unsafe {
-                    MGBA_LOG_SEND.write_volatile(self.level);
+                    self.write_byte(byte);
                 }
             }
         }
@@ -158,10 +169,7 @@ impl Write for Writer {
 impl Drop for Writer {
     /// Flushes the buffer, ensuring that the remaining bytes are sent.
     fn drop(&mut self) {
-        // SAFETY: This is guaranteed to be a write to a valid address.
-        unsafe {
-            MGBA_LOG_SEND.write_volatile(self.level);
-        }
+        self.send();
     }
 }
 
@@ -188,9 +196,23 @@ impl Log for Logger {
     /// Buffer flushing is handled automatically during logging.
     fn log(&self, record: &Record) {
         if let Ok(level) = Level::try_from(record.level()) {
-            let mut writer = Writer::new(level);
-            write(&mut writer, *record.args())
+            // Disable interrupts, storing the previous value.
+            //
+            // This prevents synchronization issues when messages are logged in interrupt handling.
+            // Interrupts triggered during this time will be handled when interrupts are reenabled.
+            let previous_ime = unsafe { IME.read_volatile() };
+            unsafe { IME.write_volatile(false) };
+
+            // Write log record.
+            //
+            // Note that the writer is dropped after this, causing the buffer to be flushed.
+            write(&mut &mut Writer::new(level), *record.args())
                 .unwrap_or_else(|error| panic!("write to mGBA log buffer failed: {}", error));
+
+            // Restore previous interrupt enable value.
+            unsafe {
+                IME.write_volatile(previous_ime);
+            }
         }
     }
 
