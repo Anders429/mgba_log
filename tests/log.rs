@@ -4,7 +4,7 @@
 //! versions.
 
 use cargo_metadata::Message;
-use mgba_logs::{Level, Record};
+use mgba_log_reporter::{Level, Record};
 use std::{
     convert::AsRef,
     io::BufReader,
@@ -45,7 +45,7 @@ fn execute_rom(rom: &str) -> Vec<Record> {
     let mut command = Command::new("cargo")
         .args(["run", rom])
         .stdout(Stdio::piped())
-        .current_dir("tests/mgba_logs")
+        .current_dir("tests/mgba_log_reporter")
         .spawn()
         .expect("failed to run rom");
 
@@ -164,4 +164,27 @@ fn overflow() {
         level: Level::Info,
         message: "wxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz".to_owned(),
     }));
+}
+
+#[test]
+fn sync() {
+    let rom = build_rom("tests/sync");
+
+    let records = execute_rom(&rom);
+
+    assert!(records.contains(&Record {
+        level: Level::Info,
+        message: "Hello, world!".to_owned(),
+    }));
+    assert!(records.contains(&Record {
+        level: Level::Debug,
+        message: "in irq".to_owned(),
+    }));
+    // Synchronization issues will cause empty messages to be included in the output. This happens
+    // because the buffer is flushed before writing has finished, and mGBA then interprets the null
+    // character at the start of the buffer as the end of the message.
+    assert!(!records.contains(&Record {
+        level: Level::Info,
+        message: "".to_owned(),
+    }))
 }

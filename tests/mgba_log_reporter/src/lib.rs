@@ -1,5 +1,11 @@
+//! A publicly exposed library for interoperating with the output of the binary.
+//!
+//! These types can be used to deserialize the JSON output from the binary. This allows reading the
+//! reported log messages.
+
 use serde::{Deserialize, Serialize};
 
+/// The level of a log message.
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Level {
     Fatal,
@@ -12,6 +18,9 @@ pub enum Level {
 impl TryFrom<u8> for Level {
     type Error = ();
 
+    /// This is the conversion from the actual level value used internally by mGBA. Other values
+    /// are possible as well (there are some log levels that are not possible when logging from a
+    /// ROM itself); these values simply return an error.
     fn try_from(level: u8) -> Result<Self, ()> {
         match level {
             0x01 => Ok(Self::Fatal),
@@ -24,8 +33,11 @@ impl TryFrom<u8> for Level {
     }
 }
 
+/// A single logged message.
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Record {
+    /// The message's level.
     pub level: Level,
+    /// The log message itself.
     pub message: String,
 }
