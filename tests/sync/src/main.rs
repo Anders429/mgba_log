@@ -26,7 +26,7 @@ extern "C" fn irq_handler(_: IrqBits) {
 
 #[no_mangle]
 pub fn main() {
-    mgba_log::init().expect("unable to initialize");
+    unsafe { mgba_log::init() }.expect("unable to initialize");
 
     RUST_IRQ_HANDLER.write(Some(irq_handler));
     DISPSTAT.write(DisplayStatus::new().with_irq_vblank(true));

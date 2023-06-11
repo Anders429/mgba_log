@@ -13,7 +13,7 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
 
 #[no_mangle]
 pub fn main() {
-    mgba_log::init().expect("unable to initialize");
+    unsafe { mgba_log::init() }.expect("unable to initialize");
     log::info!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
 
     STATUS_REGISTER.write(3);
