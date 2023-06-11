@@ -297,7 +297,16 @@ static LOGGER: Logger = Logger;
 /// This function returns `Ok(())` if the logger was enabled. If the logger was not enabled for any
 /// reason, it instead returns an [`Error`]. See the documentation for [`Error`] for what errors
 /// can occur.
-pub fn init() -> Result<(), Error> {
+///
+/// # Safety
+/// This function binds mGBA's [memory mapped debug IO registers](
+/// https://github.com/mgba-emu/mgba/blob/17a549baf2c8100f2c7e7c244996d9ac85d23198/opt/libgba/mgba.c#L31-L33)
+/// to the global logger. No other code may access the debug registers *unless* that code can
+/// guarantee it has exclusive access to the registers, meaning its access cannot ever be
+/// interrupted by a [`log`] call. Failure to do so will cause undefined behavior in the form of a
+/// [data race](https://doc.rust-lang.org/nomicon/races.html), likely resulting in garbage being
+/// logged.
+pub unsafe fn init() -> Result<(), Error> {
     // SAFETY: This is guaranteed to be a valid write.
     unsafe {
         MGBA_LOG_ENABLE.write(0xC0DE);
