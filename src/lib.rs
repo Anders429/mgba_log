@@ -306,6 +306,11 @@ static LOGGER: Logger = Logger;
 /// interrupted by a [`log`] call. Failure to do so will cause undefined behavior in the form of a
 /// [data race](https://doc.rust-lang.org/nomicon/races.html), likely resulting in garbage being
 /// logged.
+///
+/// This function is only safe to call when no other logging initialization function is called
+/// during its execution. This can be upheld by (for example) disabling interrupts when it is
+/// called. It is safe to call other logging functions (including [`fatal!`]) while this function
+/// runs.
 pub unsafe fn init() -> Result<(), Error> {
     // SAFETY: This is guaranteed to be a valid write.
     unsafe {
@@ -315,8 +320,8 @@ pub unsafe fn init() -> Result<(), Error> {
     if unsafe { MGBA_LOG_ENABLE.read_volatile() } != 0x1DEA {
         return Err(Error::NotAcknowledgedByMgba);
     }
-    log::set_logger(&LOGGER)
+    unsafe { log::set_logger_racy(&LOGGER) }
         // The `TRACE` log level is not used by mGBA.
-        .map(|()| log::set_max_level(LevelFilter::Debug))
+        .map(|()| log::set_max_level_racy(LevelFilter::Debug))
         .map_err(Into::into)
 }
