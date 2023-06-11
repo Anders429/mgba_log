@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+### Changed
+- Marked `init()` as `unsafe`.
 
 ## 0.2.0 - 2023-06-10
 ### Changed
