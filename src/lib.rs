@@ -244,12 +244,20 @@ pub fn __fatal(args: fmt::Arguments) {
     // Ensure mGBA is listening.
     // SAFETY: This is guaranteed to be a valid read.
     if unsafe { MGBA_LOG_ENABLE.read_volatile() } == 0x1DEA {
+        // Disable interrupts.
+        //
+        // This prevents synchronization issues when messages are logged in interrupt handling.
+        unsafe { IME.write_volatile(false) };
+
         // Fatal logging is often used in panic handlers, so panicking on write failures would lead
         // to recursive panicking. Instead, this fails silently.
         #[allow(unused_must_use)]
         {
             write(&mut Writer::new(Level::Fatal), args);
         }
+
+        // `IME` is not reenabled, because writing with `Level::Fatal` will always cause mGBA to
+        // halt execution.
     }
 }
 
