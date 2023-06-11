@@ -244,12 +244,20 @@ pub fn __fatal(args: fmt::Arguments) {
     // Ensure mGBA is listening.
     // SAFETY: This is guaranteed to be a valid read.
     if unsafe { MGBA_LOG_ENABLE.read_volatile() } == 0x1DEA {
+        // Disable interrupts.
+        //
+        // This prevents synchronization issues when messages are logged in interrupt handling.
+        unsafe { IME.write_volatile(false) };
+
         // Fatal logging is often used in panic handlers, so panicking on write failures would lead
         // to recursive panicking. Instead, this fails silently.
         #[allow(unused_must_use)]
         {
             write(&mut Writer::new(Level::Fatal), args);
         }
+
+        // `IME` is not reenabled, because writing with `Level::Fatal` will always cause mGBA to
+        // halt execution.
     }
 }
 
@@ -297,7 +305,21 @@ static LOGGER: Logger = Logger;
 /// This function returns `Ok(())` if the logger was enabled. If the logger was not enabled for any
 /// reason, it instead returns an [`Error`]. See the documentation for [`Error`] for what errors
 /// can occur.
-pub fn init() -> Result<(), Error> {
+///
+/// # Safety
+/// This function binds mGBA's [memory mapped debug IO registers](
+/// https://github.com/mgba-emu/mgba/blob/17a549baf2c8100f2c7e7c244996d9ac85d23198/opt/libgba/mgba.c#L31-L33)
+/// to the global logger. No other code may access the debug registers *unless* that code can
+/// guarantee it has exclusive access to the registers, meaning its access cannot ever be
+/// interrupted by a [`log`] call. Failure to do so will cause undefined behavior in the form of a
+/// [data race](https://doc.rust-lang.org/nomicon/races.html), likely resulting in garbage being
+/// logged.
+///
+/// This function is only safe to call when no other logging initialization function is called
+/// during its execution. This can be upheld by (for example) disabling interrupts when it is
+/// called. It is safe to call other logging functions (including [`fatal!`]) while this function
+/// runs.
+pub unsafe fn init() -> Result<(), Error> {
     // SAFETY: This is guaranteed to be a valid write.
     unsafe {
         MGBA_LOG_ENABLE.write(0xC0DE);
@@ -306,8 +328,8 @@ pub fn init() -> Result<(), Error> {
     if unsafe { MGBA_LOG_ENABLE.read_volatile() } != 0x1DEA {
         return Err(Error::NotAcknowledgedByMgba);
     }
-    log::set_logger(&LOGGER)
+    unsafe { log::set_logger_racy(&LOGGER) }
         // The `TRACE` log level is not used by mGBA.
-        .map(|()| log::set_max_level(LevelFilter::Debug))
+        .map(|()| log::set_max_level_racy(LevelFilter::Debug))
         .map_err(Into::into)
 }

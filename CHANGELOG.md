@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+### Changed
+- Marked `init()` as `unsafe`.
+### Fixed
+- Synchronization bug when using the `fatal!` macro.
 
 ## 0.2.0 - 2023-06-10
 ### Changed
