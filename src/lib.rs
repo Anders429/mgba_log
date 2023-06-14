@@ -36,6 +36,7 @@ use core::{
     convert::Into,
     fmt,
     fmt::{write, Display, Write},
+    sync::{atomic, atomic::compiler_fence},
 };
 use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 
@@ -301,25 +302,16 @@ static LOGGER: Logger = Logger;
 
 /// Initialize mGBA logging.
 ///
+/// This function takes control of mGBA's [memory mapped debug IO registers](
+/// https://github.com/mgba-emu/mgba/blob/17a549baf2c8100f2c7e7c244996d9ac85d23198/opt/libgba/mgba.c#L31-L33).
+/// Any data previously stored in the debug buffer will be completely overwritten by calls to the
+/// [`log`] macros.
+///
 /// # Errors
 /// This function returns `Ok(())` if the logger was enabled. If the logger was not enabled for any
 /// reason, it instead returns an [`Error`]. See the documentation for [`Error`] for what errors
 /// can occur.
-///
-/// # Safety
-/// This function binds mGBA's [memory mapped debug IO registers](
-/// https://github.com/mgba-emu/mgba/blob/17a549baf2c8100f2c7e7c244996d9ac85d23198/opt/libgba/mgba.c#L31-L33)
-/// to the global logger. No other code may access the debug registers *unless* that code can
-/// guarantee it has exclusive access to the registers, meaning its access cannot ever be
-/// interrupted by a [`log`] call. Failure to do so will cause undefined behavior in the form of a
-/// [data race](https://doc.rust-lang.org/nomicon/races.html), likely resulting in garbage being
-/// logged.
-///
-/// This function is only safe to call when no other logging initialization function is called
-/// during its execution. This can be upheld by (for example) disabling interrupts when it is
-/// called. It is safe to call other logging functions (including [`fatal!`]) while this function
-/// runs.
-pub unsafe fn init() -> Result<(), Error> {
+pub fn init() -> Result<(), Error> {
     // SAFETY: This is guaranteed to be a valid write.
     unsafe {
         MGBA_LOG_ENABLE.write(0xC0DE);
@@ -328,8 +320,32 @@ pub unsafe fn init() -> Result<(), Error> {
     if unsafe { MGBA_LOG_ENABLE.read_volatile() } != 0x1DEA {
         return Err(Error::NotAcknowledgedByMgba);
     }
-    unsafe { log::set_logger_racy(&LOGGER) }
+
+    // Disable interrupts, storing the previous value.
+    //
+    // This prevents an interrupt handler from attempting to set a different logger while
+    // `log::set_logger()` is running.
+    //
+    // Compiler fences are used to prevent these function calls from being reordered during
+    // compilation.
+    let previous_ime = unsafe { IME.read_volatile() };
+    // SAFETY: This is guaranteed to be a valid write.
+    unsafe { IME.write_volatile(false) };
+    compiler_fence(atomic::Ordering::Acquire);
+
+    // SAFETY: Interrupts are disabled, therefore this call is safe.
+    let result = unsafe { log::set_logger_racy(&LOGGER) }
         // The `TRACE` log level is not used by mGBA.
-        .map(|()| log::set_max_level_racy(LevelFilter::Debug))
-        .map_err(Into::into)
+        // SAFETY: Interrupts are disabled, therefore this call is safe.
+        .map(|()| unsafe { log::set_max_level_racy(LevelFilter::Debug) })
+        .map_err(Into::into);
+
+    compiler_fence(atomic::Ordering::Release);
+    // Restore previous interrupt enable value.
+    // SAFETY: This is guaranteed to be a valid write.
+    unsafe {
+        IME.write_volatile(previous_ime);
+    }
+
+    result
 }

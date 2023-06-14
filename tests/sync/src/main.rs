@@ -19,6 +19,9 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
     loop {}
 }
 
+#[no_mangle]
+pub fn __sync_synchronize() {}
+
 #[link_section = ".iwram"]
 extern "C" fn irq_handler(_: IrqBits) {
     log::debug!("in irq");
@@ -26,7 +29,7 @@ extern "C" fn irq_handler(_: IrqBits) {
 
 #[no_mangle]
 pub fn main() {
-    unsafe { mgba_log::init() }.expect("unable to initialize");
+    mgba_log::init().expect("unable to initialize");
 
     RUST_IRQ_HANDLER.write(Some(irq_handler));
     DISPSTAT.write(DisplayStatus::new().with_irq_vblank(true));

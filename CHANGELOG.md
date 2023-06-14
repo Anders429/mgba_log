@@ -1,10 +1,9 @@
 # Changelog
 
 ## Unreleased
-### Changed
-- Marked `init()` as `unsafe`.
 ### Fixed
 - Synchronization bug when using the `fatal!` macro.
+- `init()` now safely initializes the logger by disabling interrupts.
 
 ## 0.2.0 - 2023-06-10
 ### Changed
