@@ -19,6 +19,9 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
     loop {}
 }
 
+#[no_mangle]
+pub fn __sync_synchronize() {}
+
 #[link_section = ".iwram"]
 extern "C" fn irq_handler(_: IrqBits) {
     log::debug!("in irq");

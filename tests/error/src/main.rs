@@ -12,6 +12,9 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
 }
 
 #[no_mangle]
+pub fn __sync_synchronize() {}
+
+#[no_mangle]
 pub fn main() {
     mgba_log::init().expect("unable to initialize");
     log::error!("Hello, world!");

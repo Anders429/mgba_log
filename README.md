@@ -32,7 +32,7 @@ Add `mgba_log` as a dependency in your `Cargo.toml`:
 
 ``` toml
 [dependencies]
-mgba_log = "0.1.0"
+mgba_log = "0.2.1"
 ```
 
 Then call [`init()`](https://docs.rs/mgba_log/latest/mgba_log/fn.init.html) early in your binary. Any records logged before initialization will be silently dropped.

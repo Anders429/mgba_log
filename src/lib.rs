@@ -36,6 +36,7 @@ use core::{
     convert::Into,
     fmt,
     fmt::{write, Display, Write},
+    sync::{atomic, atomic::compiler_fence},
 };
 use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 
@@ -244,12 +245,20 @@ pub fn __fatal(args: fmt::Arguments) {
     // Ensure mGBA is listening.
     // SAFETY: This is guaranteed to be a valid read.
     if unsafe { MGBA_LOG_ENABLE.read_volatile() } == 0x1DEA {
+        // Disable interrupts.
+        //
+        // This prevents synchronization issues when messages are logged in interrupt handling.
+        unsafe { IME.write_volatile(false) };
+
         // Fatal logging is often used in panic handlers, so panicking on write failures would lead
         // to recursive panicking. Instead, this fails silently.
         #[allow(unused_must_use)]
         {
             write(&mut Writer::new(Level::Fatal), args);
         }
+
+        // `IME` is not reenabled, because writing with `Level::Fatal` will always cause mGBA to
+        // halt execution.
     }
 }
 
@@ -293,6 +302,11 @@ static LOGGER: Logger = Logger;
 
 /// Initialize mGBA logging.
 ///
+/// This function takes control of mGBA's [memory mapped debug IO registers](
+/// https://github.com/mgba-emu/mgba/blob/17a549baf2c8100f2c7e7c244996d9ac85d23198/opt/libgba/mgba.c#L31-L33).
+/// Any data previously stored in the debug buffer will be completely overwritten by calls to the
+/// [`log`] macros.
+///
 /// # Errors
 /// This function returns `Ok(())` if the logger was enabled. If the logger was not enabled for any
 /// reason, it instead returns an [`Error`]. See the documentation for [`Error`] for what errors
@@ -306,8 +320,32 @@ pub fn init() -> Result<(), Error> {
     if unsafe { MGBA_LOG_ENABLE.read_volatile() } != 0x1DEA {
         return Err(Error::NotAcknowledgedByMgba);
     }
-    log::set_logger(&LOGGER)
+
+    // Disable interrupts, storing the previous value.
+    //
+    // This prevents an interrupt handler from attempting to set a different logger while
+    // `log::set_logger()` is running.
+    //
+    // Compiler fences are used to prevent these function calls from being reordered during
+    // compilation.
+    let previous_ime = unsafe { IME.read_volatile() };
+    // SAFETY: This is guaranteed to be a valid write.
+    unsafe { IME.write_volatile(false) };
+    compiler_fence(atomic::Ordering::Acquire);
+
+    // SAFETY: Interrupts are disabled, therefore this call is safe.
+    let result = unsafe { log::set_logger_racy(&LOGGER) }
         // The `TRACE` log level is not used by mGBA.
-        .map(|()| log::set_max_level(LevelFilter::Debug))
-        .map_err(Into::into)
+        // SAFETY: Interrupts are disabled, therefore this call is safe.
+        .map(|()| unsafe { log::set_max_level_racy(LevelFilter::Debug) })
+        .map_err(Into::into);
+
+    compiler_fence(atomic::Ordering::Release);
+    // Restore previous interrupt enable value.
+    // SAFETY: This is guaranteed to be a valid write.
+    unsafe {
+        IME.write_volatile(previous_ime);
+    }
+
+    result
 }

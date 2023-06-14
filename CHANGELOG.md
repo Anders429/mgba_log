@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.2.1 - 2023-06-13
+### Fixed
+- Synchronization bug when using the `fatal!` macro.
+- `init()` now safely initializes the logger by disabling interrupts.
+
 ## 0.2.0 - 2023-06-10
 ### Changed
 - Removed `voladdress` as a dependency.

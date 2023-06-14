@@ -1,6 +1,6 @@
 [package]
 name = "mgba_log"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Anders Evensen"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -11,7 +11,7 @@ categories = ["development-tools::debugging", "game-development", "no-std", "no-
 keywords = ["log", "logging", "logger", "gba", "mgba"]
 
 [dependencies]
-log = "0.4.18"
+log = "0.4.19"
 
 [dev-dependencies]
 cargo_metadata = "0.15.4"
